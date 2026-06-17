@@ -11,8 +11,13 @@ const PLACEHOLDER_COLORS: Record<number, string> = {
   5: '#f48fb1',
 };
 
-function createPlaceholderSVG(color: string, emoji: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+export interface ProcessedImage {
+  original: string;
+  thumb: string;
+}
+
+function createPlaceholderSVG(color: string, emoji: string, size: number = 200): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 200 200">
     <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:${color};stop-opacity:0.7"/>
       <stop offset="100%" style="stop-color:${color};stop-opacity:1"/>
@@ -23,16 +28,55 @@ function createPlaceholderSVG(color: string, emoji: string): string {
   return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
 }
 
+function resizeImage(dataUrl: string, maxWidth: number, quality: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('Image load failed'));
+    img.src = dataUrl;
+  });
+}
+
 function migrateRecord(record: any): FishingRecord {
-  if ('photoData' in record && typeof record.photoData === 'string') {
+  if ('photoData' in record && typeof record.photoData === 'string'
+      && 'photoThumb' in record && typeof record.photoThumb === 'string') {
     return record as FishingRecord;
   }
-  const photoIndex = record.photoIndex || 1;
-  const color = PLACEHOLDER_COLORS[photoIndex] || PLACEHOLDER_COLORS[1];
-  const emoji = getFishEmoji(record.fishSpecies);
+
+  let photoData = '';
+  let photoThumb = '';
+
+  if ('photoData' in record && typeof record.photoData === 'string') {
+    photoData = record.photoData;
+    photoThumb = record.photoData;
+  } else {
+    const photoIndex = record.photoIndex || 1;
+    const color = PLACEHOLDER_COLORS[photoIndex] || PLACEHOLDER_COLORS[1];
+    const emoji = getFishEmoji(record.fishSpecies);
+    photoData = createPlaceholderSVG(color, emoji, 800);
+    photoThumb = createPlaceholderSVG(color, emoji, 128);
+  }
+
   return {
     ...record,
-    photoData: createPlaceholderSVG(color, emoji),
+    photoData,
+    photoThumb,
   };
 }
 
@@ -43,7 +87,9 @@ export function loadRecords(): FishingRecord[] {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     const migrated = parsed.map(migrateRecord);
-    const hasChanged = parsed.some((r: any) => !('photoData' in r));
+    const hasChanged = parsed.some(
+      (r: any) => !('photoData' in r && 'photoThumb' in r)
+    );
     if (hasChanged) {
       saveRecords(migrated);
     }
@@ -100,39 +146,30 @@ export function getFishEmoji(species: string): string {
   return emojis[species] || '🐟';
 }
 
-export async function compressImage(file: File, maxWidth: number = 1280, quality: number = 0.8): Promise<string> {
+export async function processImageFile(file: File): Promise<ProcessedImage> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Canvas context not available'));
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(dataUrl);
-      };
-      img.onerror = () => reject(new Error('Image load failed'));
-      img.src = e.target?.result as string;
+    reader.onload = async (e) => {
+      try {
+        const originalDataUrl = e.target?.result as string;
+        const original = await resizeImage(originalDataUrl, 1920, 0.9);
+        const thumb = await resizeImage(originalDataUrl, 256, 0.7);
+        resolve({ original, thumb });
+      } catch (err) {
+        reject(err);
+      }
     };
     reader.onerror = () => reject(new Error('File read failed'));
     reader.readAsDataURL(file);
   });
 }
 
-export function getPlaceholderPhoto(fishSpecies: string): string {
+export function getPlaceholderPhoto(fishSpecies: string): ProcessedImage {
   const colorIndex = Math.ceil(Math.random() * 5);
   const color = PLACEHOLDER_COLORS[colorIndex] || PLACEHOLDER_COLORS[1];
-  return createPlaceholderSVG(color, getFishEmoji(fishSpecies));
+  const emoji = getFishEmoji(fishSpecies);
+  return {
+    original: createPlaceholderSVG(color, emoji, 800),
+    thumb: createPlaceholderSVG(color, emoji, 128),
+  };
 }

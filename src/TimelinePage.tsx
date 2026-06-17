@@ -63,8 +63,8 @@ export default function TimelinePage({ records, onSelect }: Props) {
                       )}
                     </div>
                   </div>
-                  {record.photoData ? (
-                    <img src={record.photoData} alt="" className="timeline-photo-img" />
+                  {record.photoThumb ? (
+                    <img src={record.photoThumb} alt="" className="timeline-photo-img" />
                   ) : (
                     <div className="timeline-photo">
                       🐟

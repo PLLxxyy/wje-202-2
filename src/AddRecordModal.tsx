@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { FishingRecord, WEATHER_OPTIONS, BAIT_OPTIONS } from './types';
-import { generateId, compressImage, getPlaceholderPhoto } from './storage';
+import { generateId, processImageFile, getPlaceholderPhoto, ProcessedImage } from './storage';
 
 interface Props {
   onAdd: (record: FishingRecord) => void;
@@ -24,6 +24,7 @@ export default function AddRecordModal({ onAdd, onClose, existingLocations }: Pr
   const [bait, setBait] = useState('蚯蚓');
   const [notes, setNotes] = useState('');
   const [photoData, setPhotoData] = useState<string>('');
+  const [photoThumb, setPhotoThumb] = useState<string>('');
   const [uploading, setUploading] = useState(false);
 
   const albumInputRef = useRef<HTMLInputElement>(null);
@@ -36,8 +37,9 @@ export default function AddRecordModal({ onAdd, onClose, existingLocations }: Pr
     if (!file) return;
     setUploading(true);
     try {
-      const compressed = await compressImage(file);
-      setPhotoData(compressed);
+      const processed: ProcessedImage = await processImageFile(file);
+      setPhotoData(processed.original);
+      setPhotoThumb(processed.thumb);
     } catch (err) {
       console.error('图片处理失败:', err);
       alert('图片处理失败，请重试');
@@ -49,13 +51,21 @@ export default function AddRecordModal({ onAdd, onClose, existingLocations }: Pr
 
   const handleRemovePhoto = () => {
     setPhotoData('');
+    setPhotoThumb('');
   };
 
   const handleSubmit = () => {
     const finalLocation = customLocation || location || '未知钓点';
     const finalFish = customFish || fishSpecies;
     const weightNum = parseFloat(weight) || 0;
-    const finalPhoto = photoData || getPlaceholderPhoto(finalFish);
+
+    let finalPhotoData = photoData;
+    let finalPhotoThumb = photoThumb;
+    if (!finalPhotoData || !finalPhotoThumb) {
+      const placeholder = getPlaceholderPhoto(finalFish);
+      finalPhotoData = placeholder.original;
+      finalPhotoThumb = placeholder.thumb;
+    }
 
     onAdd({
       id: generateId(),
@@ -67,7 +77,8 @@ export default function AddRecordModal({ onAdd, onClose, existingLocations }: Pr
       weight: weightNum,
       bait,
       notes,
-      photoData: finalPhoto,
+      photoData: finalPhotoData,
+      photoThumb: finalPhotoThumb,
       favorite: false,
     });
   };
