@@ -152,9 +152,8 @@ export async function processImageFile(file: File): Promise<ProcessedImage> {
     reader.onload = async (e) => {
       try {
         const originalDataUrl = e.target?.result as string;
-        const original = await resizeImage(originalDataUrl, 1920, 0.9);
         const thumb = await resizeImage(originalDataUrl, 256, 0.7);
-        resolve({ original, thumb });
+        resolve({ original: originalDataUrl, thumb });
       } catch (err) {
         reject(err);
       }
