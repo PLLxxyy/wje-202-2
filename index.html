@@ -362,6 +362,90 @@
       }
       .spot-chip:hover { border-color: var(--accent); }
 
+      /* ===== Photo Upload ===== */
+      .hidden-input { display: none; }
+      .photo-upload-area {
+        display: flex;
+        gap: 12px;
+      }
+      .photo-upload-btn {
+        flex: 1;
+        padding: 20px 12px;
+        border: 2px dashed var(--border);
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+      .photo-upload-btn:hover:not(:disabled) {
+        border-color: var(--accent);
+        background: #e8f5e9;
+      }
+      .photo-upload-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .upload-icon { font-size: 28px; }
+      .upload-text { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+
+      .photo-preview-wrap {
+        position: relative;
+        width: 100%;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+      }
+      .photo-preview {
+        width: 100%;
+        max-height: 240px;
+        object-fit: cover;
+        display: block;
+        border-radius: var(--radius-sm);
+      }
+      .photo-remove-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.6);
+        color: #fff;
+        border: none;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+      .photo-remove-btn:hover { background: rgba(0,0,0,0.8); }
+
+      /* ===== Detail & Timeline Photo Images ===== */
+      .detail-photo-img {
+        width: 100%;
+        height: auto;
+        max-height: 320px;
+        object-fit: cover;
+        border-radius: var(--radius);
+        margin-bottom: 16px;
+        display: block;
+        background: #f0f0f0;
+      }
+      .timeline-photo-img {
+        width: 64px;
+        height: 64px;
+        border-radius: var(--radius-sm);
+        object-fit: cover;
+        flex-shrink: 0;
+        background: #f0f0f0;
+      }
+
       /* ===== Canvas chart container ===== */
       .chart-canvas-wrap { position: relative; width: 100%; }
       .chart-canvas-wrap canvas { width: 100% !important; display: block; }

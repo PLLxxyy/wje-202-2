@@ -1,5 +1,5 @@
 import { FishingRecord, WEATHER_EMOJIS } from './types';
-import { formatDate, formatWeight, getFishEmoji } from './storage';
+import { formatDate, formatWeight } from './storage';
 
 interface Props {
   record: FishingRecord;
@@ -17,9 +17,13 @@ export default function DetailModal({ record, onClose, onDelete, onToggleFavorit
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
-          <div className={`detail-photo photo-${record.photoIndex || 1}`}>
-            {getFishEmoji(record.fishSpecies)}
-          </div>
+          {record.photoData ? (
+            <img src={record.photoData} alt="鱼获照片" className="detail-photo-img" />
+          ) : (
+            <div className="detail-photo">
+              🐟
+            </div>
+          )}
 
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
             <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--primary-dark)' }}>

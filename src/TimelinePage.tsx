@@ -1,5 +1,5 @@
 import { FishingRecord } from './types';
-import { formatDate, formatWeight, getFishEmoji } from './storage';
+import { formatDate, formatWeight } from './storage';
 import { WEATHER_EMOJIS } from './types';
 
 interface Props {
@@ -18,7 +18,6 @@ export default function TimelinePage({ records, onSelect }: Props) {
     );
   }
 
-  // Group by date
   const grouped: Record<string, FishingRecord[]> = {};
   records.forEach(r => {
     if (!grouped[r.date]) grouped[r.date] = [];
@@ -45,7 +44,7 @@ export default function TimelinePage({ records, onSelect }: Props) {
                 <div className="timeline-main">
                   <div className="timeline-info">
                     <div className="timeline-fish">
-                      {getFishEmoji(record.fishSpecies)} {record.fishSpecies}
+                      {record.fishSpecies}
                       {record.favorite && <span style={{ marginLeft: 6, color: '#ffd700' }}>★</span>}
                     </div>
                     <div className="timeline-detail">
@@ -64,9 +63,13 @@ export default function TimelinePage({ records, onSelect }: Props) {
                       )}
                     </div>
                   </div>
-                  <div className={`timeline-photo photo-${record.photoIndex || 1}`}>
-                    {getFishEmoji(record.fishSpecies)}
-                  </div>
+                  {record.photoData ? (
+                    <img src={record.photoData} alt="" className="timeline-photo-img" />
+                  ) : (
+                    <div className="timeline-photo">
+                      🐟
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { FishingRecord, WEATHER_OPTIONS, BAIT_OPTIONS } from './types';
-import { generateId } from './storage';
+import { generateId, compressImage, getPlaceholderPhoto } from './storage';
 
 interface Props {
   onAdd: (record: FishingRecord) => void;
@@ -23,13 +23,39 @@ export default function AddRecordModal({ onAdd, onClose, existingLocations }: Pr
   const [weight, setWeight] = useState('');
   const [bait, setBait] = useState('蚯蚓');
   const [notes, setNotes] = useState('');
+  const [photoData, setPhotoData] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+
+  const albumInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const allLocations = [...new Set([...existingLocations, customLocation].filter(Boolean))];
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      setPhotoData(compressed);
+    } catch (err) {
+      console.error('图片处理失败:', err);
+      alert('图片处理失败，请重试');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoData('');
+  };
 
   const handleSubmit = () => {
     const finalLocation = customLocation || location || '未知钓点';
     const finalFish = customFish || fishSpecies;
     const weightNum = parseFloat(weight) || 0;
+    const finalPhoto = photoData || getPlaceholderPhoto(finalFish);
 
     onAdd({
       id: generateId(),
@@ -41,7 +67,7 @@ export default function AddRecordModal({ onAdd, onClose, existingLocations }: Pr
       weight: weightNum,
       bait,
       notes,
-      photoIndex: Math.ceil(Math.random() * 5),
+      photoData: finalPhoto,
       favorite: false,
     });
   };
@@ -54,6 +80,53 @@ export default function AddRecordModal({ onAdd, onClose, existingLocations }: Pr
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
+          {/* Photo Upload */}
+          <div className="form-group">
+            <label className="form-label">照片</label>
+            {photoData ? (
+              <div className="photo-preview-wrap">
+                <img src={photoData} alt="预览" className="photo-preview" />
+                <button className="photo-remove-btn" onClick={handleRemovePhoto} title="删除照片">
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="photo-upload-area">
+                <input
+                  ref={albumInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden-input"
+                  onChange={handleFileChange}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden-input"
+                  onChange={handleFileChange}
+                />
+                <button
+                  className="photo-upload-btn"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <div className="upload-icon">📷</div>
+                  <div className="upload-text">{uploading ? '处理中...' : '拍照'}</div>
+                </button>
+                <button
+                  className="photo-upload-btn"
+                  onClick={() => albumInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <div className="upload-icon">🖼️</div>
+                  <div className="upload-text">{uploading ? '处理中...' : '从相册选择'}</div>
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Date & Time */}
           <div className="form-row">
             <div className="form-group">

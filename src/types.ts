@@ -8,7 +8,7 @@ export interface FishingRecord {
   weight: number;        // 克
   bait: string;          // 饵料
   notes: string;         // 备注
-  photoIndex: number;    // 1-5 对应不同颜色占位图
+  photoData: string;     // base64 图片数据，空字符串表示无图
   favorite: boolean;
 }
 
